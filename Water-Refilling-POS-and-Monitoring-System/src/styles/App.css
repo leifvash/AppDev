@@ -1,42 +1,93 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Background container */
+.login-container {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Glass login box */
+.login-box {
+  width: 550px;
+  padding: 40px 35px;
+  border-radius: 20px;
+
+  background: rgba(53, 45, 78, 0.25); /* 25% opacity */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* Title */
+.login-box h2 {
   text-align: center;
+  color: #ffffff;
+  margin-bottom: 30px;
+  font-weight: 600;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Input group */
+.input-group {
+  margin-bottom: 20px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Labels */
+.input-group label {
+  display: block;
+  color: #ffffff;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Input fields */
+.input-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 22px;
+  border: none;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.75); /* 75% opacity */
+  color: #333;
+  font-size: 14px;
 }
 
-.card {
-  padding: 2em;
+/* Login button */
+.login-box button {
+  width: 140px;
+  padding: 10px;
+  margin: 10px auto 0;
+  display: block;
+
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+
+  background: rgba(58, 70, 140, 0.75); /* 75% opacity */
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.read-the-docs {
-  color: #888;
+/* Button hover */
+.login-box button:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
 }
