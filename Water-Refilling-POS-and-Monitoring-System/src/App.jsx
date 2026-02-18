@@ -1,8 +1,18 @@
 import React from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "./styles/App.css";
 import loginBackground from "./backgrounds/loginpcbackground.jpg";
+import Dashboard from "./Dashboard"; // import your dashboard component
 
-function App() {
+function Login() {
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // You can add authentication logic here
+    navigate("/dashboard"); // redirect to dashboard
+  };
+
   return (
     <div
       className="login-container"
@@ -15,7 +25,7 @@ function App() {
     >
       <div className="login-box">
         <h2>User Login</h2>
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label>Username</label>
             <input type="text" placeholder="Enter username" />
@@ -28,6 +38,17 @@ function App() {
         </form>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </Router>
   );
 }
 
