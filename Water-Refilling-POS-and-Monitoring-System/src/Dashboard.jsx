@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, ClipboardList, History, LogOut, AlertTriangle, BarChart2 } from 'lucide-react';
 import './styles/Dashboard.css';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('history');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate('/');
+  };
+
+
 
   return (
     <div className="dashboard-container">
@@ -45,7 +53,7 @@ const Dashboard = () => {
           
         </nav>
 
-        <button className="logout-btn">
+        <button className="logout-btn" onClick={handleLogout}>
           <LogOut size={18} />
           Logout
         </button>
