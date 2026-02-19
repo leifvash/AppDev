@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, ClipboardList, History, LogOut, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, History, LogOut, AlertTriangle, BarChart2 } from 'lucide-react';
 import './styles/Dashboard.css';
 
 const Dashboard = () => {
@@ -11,6 +11,14 @@ const Dashboard = () => {
         <h1 className="brand-title">Water Refilling POS</h1>
         
         <nav className="nav-menu">
+          <button 
+            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <BarChart2 size={24} />
+            Dashboard
+          </button>
+
           <button 
             className={`nav-item ${activeTab === 'cashier' ? 'active' : ''}`}
             onClick={() => setActiveTab('cashier')}
@@ -26,7 +34,7 @@ const Dashboard = () => {
             <ClipboardList size={24} />
             Inventory
           </button>
-          
+
           <button 
             className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
@@ -34,6 +42,7 @@ const Dashboard = () => {
             <History size={24} />
             Order History
           </button>
+          
         </nav>
 
         <button className="logout-btn">
@@ -47,7 +56,7 @@ const Dashboard = () => {
           Friday, February 14, 2026 - 11:59 PM
         </header>
 
-        {activeTab === 'history' && (
+        {activeTab === 'dashboard' && (
           <section className="stats-grid">
             <div className="stat-card">
               <h3>Today's Sales</h3>

@@ -2,15 +2,15 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "./styles/App.css";
 import loginBackground from "./backgrounds/loginpcbackground.jpg";
-import Dashboard from "./Dashboard"; // import your dashboard component
+import Dashboard from "./Dashboard"; 
 
 function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // You can add authentication logic here
-    navigate("/dashboard"); // redirect to dashboard
+ 
+    navigate("/dashboard"); 
   };
 
   return (

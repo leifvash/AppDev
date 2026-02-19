@@ -59,7 +59,7 @@
   gap: 8px;
   padding: 12px 24px;
   border: 1px solid #d00000;
-  background: transparent;
+  background: red;
   border-radius: 20px;
   cursor: pointer;
   width: fit-content;
