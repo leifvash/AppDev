@@ -66,6 +66,41 @@
   width: 100%;
 }
 
+/* Maintenance Status Styles */
+.maintenance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.maintenance-message {
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.maintenance-message--critical {
+  background-color: #ffe0e0;
+  color: #d00000;
+  border-left: 4px solid #d00000;
+}
+
+.maintenance-message--alert {
+  background-color: #fff3cd;
+  color: #856404;
+  border-left: 4px solid #ffc107;
+}
+
+.maintenance-message--good {
+  background-color: #d4edda;
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
 /* Responsive - Tablet */
 @media (max-width: 1024px) {
   .dashboard-container {

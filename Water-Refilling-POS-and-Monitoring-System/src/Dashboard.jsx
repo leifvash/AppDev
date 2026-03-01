@@ -22,7 +22,70 @@ const Dashboard = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showSuccess, setShowSuccess] = useState(null);
   const [completedOrders, setCompletedOrders] = useState([]);
+  const [maintenanceLiters, setMaintenanceLiters] = useState(0);
+  const [maintenanceCapacity] = useState(250); // Total capacity in liters
+  const [transactionGoal] = useState(50); // Daily transaction goal
   const navigate = useNavigate();
+
+  // Extract liters from product name
+  const extractLitersFromProduct = (productName) => {
+    const match = productName.match(/(\d+)\s*(?:Liter|L)/i);
+    return match ? parseInt(match[1]) : 0;
+  };
+
+  // Calculate today's stats
+  const calculateTodayStats = () => {
+    const today = new Date().toLocaleDateString();
+    const todayOrders = completedOrders.filter(order => order.date === today);
+
+    const totalSales = todayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+    const totalLiters = todayOrders.reduce((sum, order) => {
+      const orderLiters = (order.items || []).reduce((itemSum, item) => {
+        return itemSum + (extractLitersFromProduct(item.name) * item.quantity);
+      }, 0);
+      return sum + orderLiters;
+    }, 0);
+
+    return {
+      totalSales,
+      totalLiters,
+      transactionCount: todayOrders.length
+    };
+  };
+
+  // Get maintenance alert status
+  const getMaintenanceStatus = () => {
+    const percentage = (maintenanceLiters / maintenanceCapacity) * 100;
+
+    if (percentage < 15) {
+      return {
+        status: 'critical',
+        message: 'Warning: Maintenance must be executed as soon as possible',
+        buttonText: 'Maintenance Performed',
+        percentage
+      };
+    } else if (percentage >= 15 && percentage < 25) {
+      return {
+        status: 'alert',
+        message: 'Alert: Almost at maintenance session',
+        buttonText: 'Maintenance Performed',
+        percentage
+      };
+    } else {
+      return {
+        status: 'good',
+        message: 'You are good',
+        buttonText: 'Maintenance Performed',
+        percentage
+      };
+    }
+  };
+
+  // Handle maintenance performed
+  const handleMaintenancePerformed = () => {
+    setMaintenanceLiters(0);
+  };
 
   const handleLogout = () => {
     navigate('/');
@@ -69,6 +132,13 @@ const Dashboard = () => {
   const handleCheckout = (order) => {
     // Add to completed orders
     setCompletedOrders(prev => [order, ...prev]);
+
+    // Calculate liters from this order and add to maintenance tracking
+    const orderLiters = (order.items || []).reduce((sum, item) => {
+      return sum + (extractLitersFromProduct(item.name) * item.quantity);
+    }, 0);
+    setMaintenanceLiters(prev => prev + orderLiters);
+
     // Show success modal
     setShowSuccess(order);
     // Close checkout form
@@ -123,41 +193,58 @@ const Dashboard = () => {
         <main className="main-content">
           {activeTab === 'dashboard' && (
             <section className="stats-grid">
-              <StatCard
-                title="Today's Sales"
-                value="P 25,000.00"
-              />
+              {(() => {
+                const stats = calculateTodayStats();
+                const maintenanceStatus = getMaintenanceStatus();
+                const transactionPercentage = (stats.transactionCount / transactionGoal) * 100;
 
-              <StatCard
-                title="Gallons Refilled"
-                value="15,000 Gallons"
-                isBluHighlight={true}
-              />
+                return (
+                  <>
+                    <StatCard
+                      title="Today's Sales"
+                      value={`₱ ${stats.totalSales.toFixed(2)}`}
+                    />
 
-              <StatCard
-                title="Deliveries Completed"
-                value="200"
-                isBluHighlight={true}
-              >
-                <ProgressBar
-                  percentage={75}
-                  label="75% of Goal"
-                />
-              </StatCard>
+                    <StatCard
+                      title="Liters Refilled"
+                      value={`${stats.totalLiters} Liters`}
+                      isBluHighlight={true}
+                    />
 
-              <StatCard
-                title="Maintenance Status"
-                value="100L / 250L"
-              >
-                <Button
-                  variant="danger"
-                  size="medium"
-                  icon={<AlertTriangle size={16} />}
-                  className="btn--pulse"
-                >
-                  Action Required!
-                </Button>
-              </StatCard>
+                    <StatCard
+                      title="Transactions Completed"
+                      value={`${stats.transactionCount}/${transactionGoal}`}
+                      isBluHighlight={true}
+                      subtitle="transactions today"
+                    >
+                      <ProgressBar
+                        percentage={Math.min(transactionPercentage, 100)}
+                        label={`${Math.round(transactionPercentage)}% of Goal`}
+                      />
+                    </StatCard>
+
+                    <StatCard
+                      title="Maintenance Status"
+                      value={`${maintenanceLiters}L / ${maintenanceCapacity}L`}
+                    >
+                      <div className="maintenance-info">
+                        <p className={`maintenance-message maintenance-message--${maintenanceStatus.status}`}>
+                          {maintenanceStatus.message}
+                        </p>
+                        <Button
+                          variant={maintenanceStatus.status === 'critical' ? 'danger' : 'secondary'}
+                          size="medium"
+                          icon={maintenanceStatus.status === 'critical' ? <AlertTriangle size={16} /> : undefined}
+                          onClick={handleMaintenancePerformed}
+                          className={maintenanceStatus.status === 'critical' ? 'btn--pulse' : ''}
+                        >
+                          {maintenanceStatus.buttonText}
+                        </Button>
+                      </div>
+                    </StatCard>
+                  </>
+                );
+              })()}
             </section>
           )}
 
