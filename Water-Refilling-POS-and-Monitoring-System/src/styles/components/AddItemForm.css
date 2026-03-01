@@ -1,0 +1,138 @@
+/* Add Item Form Container */
+.add-item-form-container {
+  background-color: #d9d9d9;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.add-item-form__title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0077b6;
+}
+
+/* Form */
+.add-item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Form Row - Compact */
+.form-row-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+/* Form Field - Compact */
+.form-field-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label-compact {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+  display: block;
+}
+
+.form-select-compact {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 2px solid #ccc;
+  background-color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.form-select-compact:hover {
+  border-color: #0077b6;
+}
+
+.form-select-compact:focus {
+  outline: none;
+  border-color: #0077b6;
+  box-shadow: 0 0 8px rgba(0, 119, 182, 0.3);
+}
+
+/* Button */
+.add-item-form .btn {
+  align-self: flex-start;
+  min-width: 150px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .add-item-form-container {
+    padding: 16px;
+  }
+
+  .form-row-compact {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .add-item-form-container {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .add-item-form__title {
+    font-size: 1.1rem;
+  }
+
+  .form-row-compact {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .form-label-compact {
+    font-size: 0.8rem;
+  }
+
+  .form-select-compact {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+
+  .add-item-form .btn {
+    width: 100%;
+    align-self: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .add-item-form-container {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .add-item-form__title {
+    font-size: 0.95rem;
+  }
+
+  .form-row-compact {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .form-select-compact {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+}

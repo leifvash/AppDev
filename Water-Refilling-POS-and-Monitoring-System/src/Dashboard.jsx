@@ -8,15 +8,20 @@ import StatCard from './components/StatCard';
 import Button from './components/Button';
 import ProgressBar from './components/ProgressBar';
 import EmptyState from './components/EmptyState';
-import CashierForm from './components/CashierForm';
+import AddItemForm from './components/AddItemForm';
+import CurrentOrder from './components/CurrentOrder';
+import PaymentSummary from './components/PaymentSummary';
+import CheckoutForm from './components/CheckoutForm';
 import OrderReceipt from './components/OrderReceipt';
 import DayTransactionList from './components/DayTransactionList';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [cashierOrders, setCashierOrders] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [showReceipt, setShowReceipt] = useState(null);
+  const [completedOrders, setCompletedOrders] = useState([]);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -27,15 +32,31 @@ const Dashboard = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const handleOrderSubmit = (order) => {
-    // Add order to cashier orders
-    setCashierOrders(prev => [order, ...prev]);
+  const handleAddItem = (item) => {
+    setCartItems(prev => [...prev, item]);
+  };
+
+  const handleRemoveItem = (itemId) => {
+    setCartItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  const calculateCartTotal = () => {
+    return cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  };
+
+  const handleCheckout = (order) => {
+    // Add to completed orders
+    setCompletedOrders(prev => [order, ...prev]);
     // Show receipt
     setShowReceipt(order);
+    // Close checkout form
+    setShowCheckout(false);
+    // Clear cart
+    setCartItems([]);
   };
 
   const handleDeleteOrder = (orderId) => {
-    setCashierOrders(prev => prev.filter(order => order.id !== orderId));
+    setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
   };
 
   // Navigation items configuration
@@ -114,14 +135,28 @@ const Dashboard = () => {
 
           {activeTab === 'cashier' && (
             <div className="cashier-section">
-              <CashierForm onOrderSubmit={handleOrderSubmit} />
-              <DayTransactionList orders={cashierOrders} onDeleteOrder={handleDeleteOrder} />
+              <AddItemForm onAddItem={handleAddItem} />
+              <CurrentOrder items={cartItems} onRemoveItem={handleRemoveItem} />
+              <PaymentSummary
+                items={cartItems}
+                onPayNow={() => setShowCheckout(true)}
+                isDisabled={cartItems.length === 0}
+              />
+              {showCheckout && (
+                <CheckoutForm
+                  cartItems={cartItems}
+                  totalAmount={calculateCartTotal()}
+                  onCheckout={handleCheckout}
+                  onClose={() => setShowCheckout(false)}
+                />
+              )}
               {showReceipt && (
                 <OrderReceipt
                   orderData={showReceipt}
                   onClose={() => setShowReceipt(null)}
                 />
               )}
+              <DayTransactionList orders={completedOrders} onDeleteOrder={handleDeleteOrder} />
             </div>
           )}
 
