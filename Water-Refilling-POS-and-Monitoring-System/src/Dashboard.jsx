@@ -12,7 +12,7 @@ import ProductGrid from './components/ProductGrid';
 import OrderSummary from './components/OrderSummary';
 import PaymentSummaryNew from './components/PaymentSummaryNew';
 import CheckoutForm from './components/CheckoutForm';
-import OrderReceipt from './components/OrderReceipt';
+import OrderSuccessModal from './components/OrderSuccessModal';
 import DayTransactionList from './components/DayTransactionList';
 
 const Dashboard = () => {
@@ -20,7 +20,7 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [showReceipt, setShowReceipt] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(null);
   const [completedOrders, setCompletedOrders] = useState([]);
   const navigate = useNavigate();
 
@@ -69,12 +69,18 @@ const Dashboard = () => {
   const handleCheckout = (order) => {
     // Add to completed orders
     setCompletedOrders(prev => [order, ...prev]);
-    // Show receipt
-    setShowReceipt(order);
+    // Show success modal
+    setShowSuccess(order);
     // Close checkout form
     setShowCheckout(false);
     // Clear cart
     setCartItems([]);
+  };
+
+  const handleSuccessClose = () => {
+    // Close success modal and redirect to cashier
+    setShowSuccess(null);
+    setActiveTab('cashier');
   };
 
   const handleDeleteOrder = (orderId) => {
@@ -183,10 +189,10 @@ const Dashboard = () => {
                   onClose={() => setShowCheckout(false)}
                 />
               )}
-              {showReceipt && (
-                <OrderReceipt
-                  orderData={showReceipt}
-                  onClose={() => setShowReceipt(null)}
+              {showSuccess && (
+                <OrderSuccessModal
+                  order={showSuccess}
+                  onClose={handleSuccessClose}
                 />
               )}
               <DayTransactionList orders={completedOrders} onDeleteOrder={handleDeleteOrder} />
