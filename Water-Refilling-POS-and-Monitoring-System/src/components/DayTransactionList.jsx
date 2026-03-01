@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../styles/components/DayTransactionList.css';
 import Button from './Button';
 import { Trash2 } from 'lucide-react';
+import OrderDetailsModal from './OrderDetailsModal';
 
 const DayTransactionList = ({ orders, onDeleteOrder }) => {
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   const calculateTotals = () => {
     return {
       totalSales: orders.reduce((sum, order) => sum + order.totalAmount, 0),
@@ -11,6 +14,16 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
       totalDeliveries: orders.filter(o => o.orderType === 'delivery').length,
       totalWalkIns: orders.filter(o => o.orderType === 'walk-in').length
     };
+  };
+
+  const getProductsDisplay = (items) => {
+    if (!items || items.length === 0) return 'N/A';
+    return items.map(item => `${item.name}`).join(', ');
+  };
+
+  const getTotalQty = (items) => {
+    if (!items || items.length === 0) return 0;
+    return items.reduce((sum, item) => sum + item.quantity, 0);
   };
 
   const totals = calculateTotals();
@@ -51,7 +64,7 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
                   <th className="table-header">#</th>
                   <th className="table-header">Customer</th>
                   <th className="table-header">Type</th>
-                  <th className="table-header">Product</th>
+                  <th className="table-header">Products</th>
                   <th className="table-header">Qty</th>
                   <th className="table-header">Total</th>
                   <th className="table-header">Time</th>
@@ -60,7 +73,11 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
               </thead>
               <tbody>
                 {orders.map((order, index) => (
-                  <tr key={order.id} className="table-row">
+                  <tr
+                    key={order.id}
+                    className="table-row table-row--clickable"
+                    onClick={() => setSelectedOrder(order)}
+                  >
                     <td className="table-cell">{index + 1}</td>
                     <td className="table-cell">{order.customerName}</td>
                     <td className="table-cell">
@@ -68,14 +85,17 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
                         {order.orderType === 'delivery' ? 'Delivery' : 'Walk-In'}
                       </span>
                     </td>
-                    <td className="table-cell">{order.product.size}</td>
-                    <td className="table-cell">{order.quantity}</td>
+                    <td className="table-cell table-cell--products">{getProductsDisplay(order.items)}</td>
+                    <td className="table-cell">{getTotalQty(order.items)}</td>
                     <td className="table-cell table-cell--amount">₱{order.totalAmount.toFixed(2)}</td>
                     <td className="table-cell">{order.time}</td>
                     <td className="table-cell table-cell--action">
                       <button
                         className="delete-btn"
-                        onClick={() => onDeleteOrder(order.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteOrder(order.id);
+                        }}
                         title="Delete order"
                         aria-label="Delete order"
                       >
@@ -88,6 +108,13 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
             </table>
           </div>
         </>
+      )}
+
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
       )}
     </div>
   );

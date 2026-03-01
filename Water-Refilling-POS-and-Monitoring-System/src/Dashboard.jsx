@@ -201,10 +201,9 @@ const Dashboard = () => {
           )}
 
           {activeTab === 'history' && (
-            <EmptyState
-              title="Order History"
-              message="There is no content available for this section yet."
-            />
+            <div className="order-history-section">
+              <DayTransactionList orders={completedOrders} onDeleteOrder={handleDeleteOrder} />
+            </div>
           )}
         </main>
       </div>

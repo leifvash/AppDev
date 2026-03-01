@@ -261,6 +261,21 @@
   font-size: 1.1rem;
 }
 
+/* Payment Method Info */
+.payment-method-info {
+  background-color: #e7f3ff;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 2px solid #0077b6;
+}
+
+.payment-method-text {
+  margin: 0;
+  color: #0077b6;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
 /* Checkout Actions */
 .checkout-actions {
   display: flex;

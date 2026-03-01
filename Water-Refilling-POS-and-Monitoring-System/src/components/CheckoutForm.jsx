@@ -8,9 +8,7 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
     customerName: '',
     orderType: 'walk-in',
     deliveryAddress: '',
-    contactNumber: '',
-    paymentMethod: 'cash',
-    amountPaid: totalAmount.toString()
+    contactNumber: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -48,19 +46,12 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
 
       if (!formData.contactNumber.trim()) {
         newErrors.contactNumber = 'Contact number is required';
+      } else if (formData.contactNumber.trim().length < 10) {
+        newErrors.contactNumber = 'Contact number must be valid';
       }
     }
 
-    if (!formData.amountPaid || isNaN(formData.amountPaid) || parseFloat(formData.amountPaid) < totalAmount) {
-      newErrors.amountPaid = `Amount paid must be at least ₱${totalAmount.toFixed(2)}`;
-    }
-
     return newErrors;
-  };
-
-  const calculateChange = () => {
-    const amountPaid = parseFloat(formData.amountPaid) || 0;
-    return Math.max(0, amountPaid - totalAmount);
   };
 
   const handleSubmit = (e) => {
@@ -79,9 +70,7 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
         contactNumber: formData.orderType === 'delivery' ? formData.contactNumber : null,
         items: cartItems,
         totalAmount: totalAmount,
-        paymentMethod: formData.paymentMethod,
-        amountPaid: parseFloat(formData.amountPaid),
-        change: calculateChange()
+        paymentMethod: 'cash'
       };
 
       onCheckout(order);
@@ -94,35 +83,12 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
     <div className="checkout-overlay">
       <div className="checkout-modal">
         <div className="checkout-header">
-          <h2 className="checkout-header__title">Complete Checkout</h2>
+          <h2 className="checkout-header__title">Complete Purchase</h2>
           <button className="checkout-close" onClick={onClose}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="checkout-form">
           <div className="checkout-content">
-            {/* Order Summary */}
-            <section className="checkout-section">
-              <h3 className="checkout-section__title">Order Summary</h3>
-              <div className="order-items-summary">
-                <div className="summary-header">
-                  <span>Product</span>
-                  <span>Qty</span>
-                  <span>Total</span>
-                </div>
-                {cartItems.map(item => (
-                  <div key={item.id} className="summary-item">
-                    <span>{item.product.size}</span>
-                    <span>{item.quantity}</span>
-                    <span>₱{item.totalPrice.toFixed(2)}</span>
-                  </div>
-                ))}
-                <div className="summary-total">
-                  <span>Total Amount:</span>
-                  <span>₱{totalAmount.toFixed(2)}</span>
-                </div>
-              </div>
-            </section>
-
             {/* Customer Information */}
             <section className="checkout-section">
               <h3 className="checkout-section__title">Customer Information</h3>
@@ -192,45 +158,37 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
               </section>
             )}
 
-            {/* Payment */}
+            {/* Order Summary */}
             <section className="checkout-section">
-              <h3 className="checkout-section__title">Payment Information</h3>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <label className="form-label">Payment Method</label>
-                  <select
-                    name="paymentMethod"
-                    value={formData.paymentMethod}
-                    onChange={handleInputChange}
-                    className="form-select"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="debit_card">Debit Card</option>
-                    <option value="check">Check</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                  </select>
+              <h3 className="checkout-section__title">Order Summary</h3>
+              <div className="order-items-summary">
+                <div className="summary-header">
+                  <span>Product</span>
+                  <span>Qty</span>
+                  <span>Total</span>
+                </div>
+                {cartItems.map(item => (
+                  <div key={item.id} className="summary-item">
+                    <span>{item.name}</span>
+                    <span>{item.quantity}</span>
+                    <span>₱{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="summary-total">
+                  <span>Total Amount:</span>
+                  <span>₱{totalAmount.toFixed(2)}</span>
                 </div>
               </div>
+            </section>
 
-              <InputField
-                label="Amount Paid (₱)"
-                type="number"
-                placeholder="Enter amount paid"
-                name="amountPaid"
-                value={formData.amountPaid}
-                onChange={handleInputChange}
-                error={errors.amountPaid}
-                required
-              />
-
-              {formData.amountPaid && !errors.amountPaid && (
-                <div className="payment-change">
-                  <span className="change-label">Change:</span>
-                  <span className="change-value">₱{calculateChange().toFixed(2)}</span>
-                </div>
-              )}
+            {/* Payment Information */}
+            <section className="checkout-section">
+              <h3 className="checkout-section__title">Payment Method</h3>
+              <div className="payment-method-info">
+                <p className="payment-method-text">
+                  <strong>Cash</strong> - Please prepare the exact amount or have cash ready for change.
+                </p>
+              </div>
             </section>
           </div>
 
