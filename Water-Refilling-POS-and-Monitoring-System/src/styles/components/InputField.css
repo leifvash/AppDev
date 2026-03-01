@@ -1,0 +1,73 @@
+/* Input Field Container */
+.input-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Label */
+.input-field__label {
+  display: block;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Required Indicator */
+.input-field__required {
+  color: #ff4444;
+  margin-left: 4px;
+}
+
+/* Input */
+.input-field__input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 22px;
+  border: 2px solid transparent;
+  outline: none;
+  background: rgba(255, 255, 255, 0.75);
+  color: #333;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+/* Input Focused State */
+.input-field__input--focused {
+  border-color: #0077b6;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 8px rgba(0, 119, 182, 0.3);
+}
+
+/* Input Error State */
+.input-field__input--error {
+  border-color: #d00000;
+  background: rgba(255, 200, 200, 0.3);
+}
+
+.input-field__input--error:focus {
+  border-color: #d00000;
+  box-shadow: 0 0 8px rgba(208, 0, 0, 0.3);
+}
+
+/* Error Message */
+.input-field__error {
+  color: #ff4444;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .input-field__input {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  .input-field__label {
+    font-size: 0.9rem;
+  }
+}
