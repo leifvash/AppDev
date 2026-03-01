@@ -1,0 +1,242 @@
+/* Payment Summary New Container */
+.payment-summary-new-container {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+/* Payment Header */
+.payment-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.payment-header__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-header__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-header__value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Payment Header Divider */
+.payment-header__divider {
+  width: 1px;
+  height: 40px;
+  background-color: #e5e7eb;
+}
+
+/* Discount Input Group */
+.discount-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.discount-input {
+  width: 100%;
+  padding: 6px 24px 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.discount-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.discount-currency {
+  position: absolute;
+  right: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* Payment Total */
+.payment-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  border: 2px solid #3b82f6;
+}
+
+.payment-total__label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.payment-total__amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+/* Payment Button Full Width */
+.payment-btn-full {
+  width: 100%;
+}
+
+.payment-summary-new-container .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.payment-summary-new-container .btn:disabled:hover {
+  transform: none;
+  opacity: 0.6;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .payment-summary-new-container {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .payment-header {
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .payment-header__divider {
+    height: 36px;
+  }
+
+  .payment-total {
+    padding: 12px;
+  }
+
+  .payment-total__label {
+    font-size: 0.95rem;
+  }
+
+  .payment-total__amount {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-summary-new-container {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .payment-header {
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .payment-header__divider {
+    display: none;
+  }
+
+  .payment-header__item {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #f9fafb;
+    border-radius: 6px;
+  }
+
+  .payment-header__label {
+    font-size: 0.75rem;
+  }
+
+  .payment-header__value {
+    font-size: 0.95rem;
+  }
+
+  .discount-input {
+    padding: 5px 24px 5px 6px;
+    font-size: 0.9rem;
+  }
+
+  .payment-total {
+    padding: 10px 12px;
+  }
+
+  .payment-total__label {
+    font-size: 0.9rem;
+  }
+
+  .payment-total__amount {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .payment-summary-new-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .payment-header {
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+
+  .payment-header__item {
+    width: 100%;
+    padding: 8px;
+  }
+
+  .payment-header__label {
+    font-size: 0.7rem;
+  }
+
+  .payment-header__value,
+  .discount-input {
+    font-size: 0.85rem;
+  }
+
+  .payment-total {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .payment-total__label {
+    font-size: 0.85rem;
+  }
+
+  .payment-total__amount {
+    font-size: 1.1rem;
+  }
+}

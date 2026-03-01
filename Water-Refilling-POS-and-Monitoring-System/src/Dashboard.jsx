@@ -8,9 +8,9 @@ import StatCard from './components/StatCard';
 import Button from './components/Button';
 import ProgressBar from './components/ProgressBar';
 import EmptyState from './components/EmptyState';
-import AddItemForm from './components/AddItemForm';
-import CurrentOrder from './components/CurrentOrder';
-import PaymentSummary from './components/PaymentSummary';
+import ProductGrid from './components/ProductGrid';
+import OrderSummary from './components/OrderSummary';
+import PaymentSummaryNew from './components/PaymentSummaryNew';
 import CheckoutForm from './components/CheckoutForm';
 import OrderReceipt from './components/OrderReceipt';
 import DayTransactionList from './components/DayTransactionList';
@@ -40,8 +40,30 @@ const Dashboard = () => {
     setCartItems(prev => prev.filter(item => item.id !== itemId));
   };
 
+  const handleUpdateQuantity = (itemId, newQuantity) => {
+    setCartItems(prev =>
+      prev.map(item =>
+        item.id === itemId
+          ? { ...item, quantity: newQuantity, subtotal: item.price * newQuantity }
+          : item
+      )
+    );
+  };
+
   const calculateCartTotal = () => {
-    return cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    return cartItems.reduce((sum, item) => sum + (item.subtotal || item.price), 0);
+  };
+
+  const handleAddProduct = (product) => {
+    const cartItem = {
+      id: Date.now(),
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      subtotal: product.price
+    };
+    handleAddItem(cartItem);
   };
 
   const handleCheckout = (order) => {
@@ -135,13 +157,24 @@ const Dashboard = () => {
 
           {activeTab === 'cashier' && (
             <div className="cashier-section">
-              <AddItemForm onAddItem={handleAddItem} />
-              <CurrentOrder items={cartItems} onRemoveItem={handleRemoveItem} />
-              <PaymentSummary
-                items={cartItems}
-                onPayNow={() => setShowCheckout(true)}
-                isDisabled={cartItems.length === 0}
-              />
+              <div className="cashier-layout">
+                <div className="cashier-left">
+                  <ProductGrid onAddProduct={handleAddProduct} />
+                </div>
+                <div className="cashier-right">
+                  <OrderSummary
+                    items={cartItems}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onRemoveItem={handleRemoveItem}
+                  />
+                  <PaymentSummaryNew
+                    items={cartItems}
+                    onPayNow={(totals) => setShowCheckout(true)}
+                    isDisabled={cartItems.length === 0}
+                  />
+                </div>
+              </div>
+
               {showCheckout && (
                 <CheckoutForm
                   cartItems={cartItems}
