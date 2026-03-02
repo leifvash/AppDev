@@ -58,7 +58,7 @@ const CashierForm = ({ onOrderSubmit }) => {
 
       if (!formData.contactNumber.trim()) {
         newErrors.contactNumber = 'Contact number is required';
-      } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.contactNumber)) {
+      } else if (!/^[\d\s]+$/.test(formData.contactNumber)) {
         newErrors.contactNumber = 'Please enter a valid contact number';
       }
     }
@@ -117,7 +117,6 @@ const CashierForm = ({ onOrderSubmit }) => {
     if (Object.keys(newErrors).length === 0) {
       // Create order object
       const order = {
-        id: Date.now(),
         date: new Date().toLocaleDateString(),
         time: new Date().toLocaleTimeString(),
         customerName: formData.customerName,

@@ -103,9 +103,9 @@
 /* Product Card Add Button */
 .product-card__add-btn {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 40px;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
   height: 40px;
   border-radius: 50%;
   background-color: #3b82f6;

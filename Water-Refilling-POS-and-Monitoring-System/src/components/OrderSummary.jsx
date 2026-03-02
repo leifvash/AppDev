@@ -2,8 +2,7 @@ import React from 'react';
 import '../styles/components/OrderSummary.css';
 import { Trash2, TrendingUp } from 'lucide-react';
 
-const OrderSummary = ({ items, onUpdateQuantity, onRemoveItem, subtotal, discount = 0 }) => {
-  const total = Math.max(0, subtotal - discount);
+const OrderSummary = ({ items, onUpdateQuantity, onRemoveItem, }) => {
 
   if (items.length === 0) {
     return (

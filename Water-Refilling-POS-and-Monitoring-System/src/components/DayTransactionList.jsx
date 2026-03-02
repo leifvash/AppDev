@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import '../styles/components/DayTransactionList.css';
 import Button from './Button';
-import { Trash2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import OrderDetailsModal from './OrderDetailsModal';
 
-const DayTransactionList = ({ orders, onDeleteOrder }) => {
+const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [transactionToConfirm, setTransactionToConfirm] = useState(null);
 
   const calculateTotals = () => {
     return {
@@ -90,17 +91,19 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
                     <td className="table-cell table-cell--amount">₱{order.totalAmount.toFixed(2)}</td>
                     <td className="table-cell">{order.time}</td>
                     <td className="table-cell table-cell--action">
-                      <button
-                        className="delete-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteOrder(order.id);
-                        }}
-                        title="Delete order"
-                        aria-label="Delete order"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {canDelete && (
+                        <button
+                          className="delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTransactionToConfirm(order);
+                          }}
+                          title="Mark as Complete"
+                          aria-label="Mark transaction as complete"
+                        >
+                          <Check size={18} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -115,6 +118,48 @@ const DayTransactionList = ({ orders, onDeleteOrder }) => {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
         />
+      )}
+
+      {transactionToConfirm && (
+        <div className="confirmation-overlay">
+          <div className="confirmation-modal">
+            <div className="confirmation-header">
+              <h2 className="confirmation-title">Mark Transaction as Complete?</h2>
+            </div>
+
+            <div className="confirmation-content">
+              <p className="confirmation-message">
+                Customer: <strong>{transactionToConfirm.customerName}</strong>
+              </p>
+              <p className="confirmation-subtitle">
+                Order Total: <strong>₱{transactionToConfirm.totalAmount.toFixed(2)}</strong>
+              </p>
+              <p className="confirmation-subtitle">
+                Are you sure you want to mark this transaction as complete?
+              </p>
+            </div>
+
+            <div className="confirmation-actions">
+              <Button
+                variant="primary"
+                size="medium"
+                onClick={() => {
+                  onDeleteOrder(transactionToConfirm.id);
+                  setTransactionToConfirm(null);
+                }}
+              >
+                Yes, Mark as Complete
+              </Button>
+              <Button
+                variant="secondary"
+                size="medium"
+                onClick={() => setTransactionToConfirm(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

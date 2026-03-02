@@ -11,6 +11,7 @@
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease;
+  color:#000000;
 }
 
 @keyframes fadeIn {
@@ -101,10 +102,11 @@
   overflow-y: auto;
 }
 
-/* Checkout Section */
+/* Order */
 .checkout-section {
   display: flex;
   flex-direction: column;
+  color: #000000;
   gap: 16px;
   padding: 16px;
   background-color: #f9f9f9;
@@ -396,4 +398,11 @@
     flex-direction: column;
     gap: 8px;
   }
+}
+
+/* color for customer name and address labels */
+.checkout-modal label, 
+.form-label, 
+.radio-label span {
+  color: #000000 !important;
 }
