@@ -40,7 +40,7 @@ const MaintenanceConfirmationModal = ({ onConfirm, onCancel }) => {
 
         <div className="confirmation-content">
           <p className="confirmation-message">Are you sure you want to mark maintenance as completed?</p>
-          <p className="confirmation-subtitle">This will reset the system to full capacity (250L/250L).</p>
+          <p className="confirmation-subtitle">This will reset the system to full capacity (2650L/2650L).</p>
         </div>
 
         <div className="confirmation-actions">

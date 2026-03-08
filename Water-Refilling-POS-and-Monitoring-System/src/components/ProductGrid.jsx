@@ -49,7 +49,7 @@ const ProductGrid = ({ onAddProduct, inventory = {}, cartItems = [] }) => {
   return (
     <div className="product-grid-container">
       <div className="product-header">
-        <h2 className="product-title">Product Grid</h2>
+        <h2 className="product-title">Products</h2>
       </div>
 
       <div className="product-tabs">
