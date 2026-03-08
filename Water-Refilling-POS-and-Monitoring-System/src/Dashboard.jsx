@@ -7,7 +7,6 @@ import Sidebar from './components/Sidebar';
 import StatCard from './components/StatCard';
 import Button from './components/Button';
 import ProgressBar from './components/ProgressBar';
-import EmptyState from './components/EmptyState';
 import ProductGrid from './components/ProductGrid';
 import OrderSummary from './components/OrderSummary';
 import PaymentSummaryNew from './components/PaymentSummaryNew';
@@ -16,6 +15,8 @@ import OrderSuccessModal from './components/OrderSuccessModal';
 import DayTransactionList from './components/DayTransactionList';
 import HealthBar from './components/HealthBar';
 import MaintenanceConfirmationModal from './components/MaintenanceConfirmationModal';
+import InventoryView from './components/InventoryView';
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -25,15 +26,30 @@ const Dashboard = () => {
   const [completedOrders, setCompletedOrders] = useState([]); // Permanent order history
   const [todayTransactions, setTodayTransactions] = useState([]); // Deletable today's transactions
   const [maintenanceLiters, setMaintenanceLiters] = useState(0);
-  const [maintenanceCapacity] = useState(250);
+  const [maintenanceCapacity] = useState(2650);
   const [transactionGoal] = useState(50);
   const [showMaintenanceConfirm, setShowMaintenanceConfirm] = useState(false);
+  
+  // Inventory state - generate random quantities on initialization
+  const [inventory, setInventory] = useState(() => {
+  return {
+    1: 50,  // Used 5 Liter Purified Water
+    2: 50,  // New 5 Liter Purified Water
+    3: 50,  // Used 10 Liter Purified Water
+    4: 50,  // New 10 Liter Purified Water
+    5: 50,   // Used 20 Liter Empty Container
+    6: 50,  // New 20 Liter Empty Container
+  };
+});
+
   const navigate = useNavigate();
+
   // Extract liters from product name
   const extractLitersFromProduct = (productName) => {
     const match = productName.match(/(\d+)\s*(?:Liter|L)/i);
     return match ? parseInt(match[1]) : 0;
   };
+
   // Calculate today's stats
   const calculateTodayStats = () => {
     const today = new Date().toLocaleDateString();
@@ -51,6 +67,7 @@ const Dashboard = () => {
       transactionCount: todayOrders.length,
     };
   };
+
   // Get maintenance alert status based on health (remaining capacity)
   const getMaintenanceStatus = () => {
     const remainingLiters = maintenanceCapacity - maintenanceLiters;
@@ -78,44 +95,57 @@ const Dashboard = () => {
       };
     }
   };
+
   // ✅ FIX 1 & 2: Call the functions and store results in variables
   const stats = calculateTodayStats();
   const maintenanceStatus = getMaintenanceStatus();
+
   // Handle maintenance fix
   const handleMaintenanceFix = () => {
     setShowMaintenanceConfirm(true);
   };
+
   // Handle maintenance confirmation
   const handleMaintenanceConfirm = () => {
     setMaintenanceLiters(0);
     setShowMaintenanceConfirm(false);
     setActiveTab('dashboard');
   };
+
   const handleLogout = () => {
     navigate('/');
   };
+
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
+
   const handleAddItem = (item) => {
     setCartItems(prev => [...prev, item]);
   };
+
   const handleRemoveItem = (itemId) => {
     setCartItems(prev => prev.filter(item => item.id !== itemId));
   };
-  const handleUpdateQuantity = (itemId, newQuantity) => {
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: newQuantity, subtotal: item.price * newQuantity }
-          : item
-      )
-    );
-  };
+
   const calculateCartTotal = () => {
     return cartItems.reduce((sum, item) => sum + (item.subtotal || item.price), 0);
   };
+
+  // Calculate available stock (inventory minus what's in cart)
+  const getAvailableStock = (productId) => {
+    const totalInventory = inventory[productId] || 0;
+    const inCart = cartItems
+      .filter(item => item.productId === productId)
+      .reduce((sum, item) => sum + item.quantity, 0);
+    return Math.max(0, totalInventory - inCart);
+  };
+
   const handleAddProduct = (product) => {
+    const availableStock = getAvailableStock(product.id);
+    if (availableStock <= 0) {
+      return; // Don't add if no available stock
+    }
     const cartItem = {
       id: Date.now(),
       productId: product.id,
@@ -126,33 +156,77 @@ const Dashboard = () => {
     };
     handleAddItem(cartItem);
   };
+
+  const handleUpdateQuantity = (itemId, newQuantity) => {
+    const item = cartItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const availableStock = getAvailableStock(item.productId);
+    if (newQuantity > availableStock + item.quantity) {
+      // Can't exceed available stock
+      return;
+    }
+    
+    setCartItems(prev =>
+      prev.map(item =>
+        item.id === itemId
+          ? { ...item, quantity: newQuantity, subtotal: item.price * newQuantity }
+          : item
+      )
+    );
+  };
+
+  // Update inventory after checkout
+  const updateInventoryAfterCheckout = (items) => {
+    setInventory(prev => {
+      const newInventory = { ...prev };
+      items.forEach(item => {
+        const productId = item.productId;
+        if (newInventory[productId] !== undefined) {
+          newInventory[productId] = Math.max(0, newInventory[productId] - item.quantity);
+        }
+      });
+      return newInventory;
+    });
+  };
+
   const handleCheckout = (order) => {
+    // Update inventory before completing order
+    updateInventoryAfterCheckout(order.items);
+    
     setCompletedOrders(prev => [order, ...prev]); // Add to permanent history
     setTodayTransactions(prev => [order, ...prev]); // Add to today's deletable transactions
+    
     const orderLiters = (order.items || []).reduce((sum, item) => {
       return sum + (extractLitersFromProduct(item.name) * item.quantity);
     }, 0);
     setMaintenanceLiters(prev => prev + orderLiters);
+    
     setShowSuccess(order);
     setShowCheckout(false);
     setCartItems([]);
   };
+
   const handleSuccessClose = () => {
     setShowSuccess(null);
     setActiveTab('cashier');
   };
+
   const handleDeleteOrder = (orderId) => {
     setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
   };
+
   const handleDeleteTodayTransaction = (orderId) => {
     setTodayTransactions(prev => prev.filter(transaction => transaction.id !== orderId));
   };
+
   const navItems = [
     { id: 'dashboard', icon: <BarChart2 size={24} />, label: 'Dashboard' },
     { id: 'cashier', icon: <LayoutDashboard size={24} />, label: 'Cashier' },
     { id: 'inventory', icon: <ClipboardList size={24} />, label: 'Inventory' },
     { id: 'history', icon: <History size={24} />, label: 'Order History' },
   ];
+
   const logoutBtn = (
     <Button
       variant="danger"
@@ -163,6 +237,7 @@ const Dashboard = () => {
       Logout
     </Button>
   );
+
   return (
     <div className="dashboard-page">
       <Header title="Water Refilling POS" />
@@ -219,11 +294,16 @@ const Dashboard = () => {
               </StatCard>
             </section>
           )}
+
           {activeTab === 'cashier' && (
             <div className="cashier-section">
               <div className="cashier-layout">
                 <div className="cashier-left">
-                  <ProductGrid onAddProduct={handleAddProduct} />
+                  <ProductGrid 
+                    onAddProduct={handleAddProduct} 
+                    inventory={inventory}
+                    cartItems={cartItems}
+                  />
                 </div>
                 <div className="cashier-right">
                   <OrderSummary
@@ -255,17 +335,17 @@ const Dashboard = () => {
               <DayTransactionList orders={todayTransactions} onDeleteOrder={handleDeleteTodayTransaction} />
             </div>
           )}
+
           {activeTab === 'inventory' && (
-            <EmptyState
-              title="Inventory Section"
-              message="There is no content available for this section yet."
-            />
+            <InventoryView inventory={inventory} />
           )}
+
           {activeTab === 'history' && (
             <div className="order-history-section">
               <DayTransactionList orders={completedOrders} onDeleteOrder={handleDeleteOrder} canDelete={false} />
             </div>
           )}
+
           {showMaintenanceConfirm && (
             <MaintenanceConfirmationModal
               onConfirm={handleMaintenanceConfirm}
@@ -277,4 +357,6 @@ const Dashboard = () => {
     </div>
   );
 };
+
 export default Dashboard;
+
