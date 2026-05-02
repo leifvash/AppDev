@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, ClipboardList, History, LogOut, AlertTriangle, BarChart2 } from 'lucide-react';
 import './styles/Dashboard.css';
 import { useNavigate } from 'react-router-dom';
@@ -30,17 +30,60 @@ const Dashboard = () => {
   const [transactionGoal] = useState(50);
   const [showMaintenanceConfirm, setShowMaintenanceConfirm] = useState(false);
   
-  // Inventory state - generate random quantities on initialization
-  const [inventory, setInventory] = useState(() => {
-  return {
-    1: 50,  // Used 5 Liter Purified Water
-    2: 50,  // New 5 Liter Purified Water
-    3: 50,  // Used 10 Liter Purified Water
-    4: 50,  // New 10 Liter Purified Water
-    5: 50,   // Used 20 Liter Empty Container
-    6: 50,  // New 20 Liter Empty Container
+  // Inventory state
+  const [inventory, setInventory] = useState({});
+
+  const fetchInventory = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/inventory/');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.length > 0) {
+          const inv = data[0];
+          setInventory({
+            1: inv.product_1,
+            2: inv.product_2,
+            3: inv.product_3,
+            4: inv.product_4,
+            5: inv.product_5,
+            6: inv.product_6,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+    }
   };
-});
+
+  const updateInventory = async (newInventory) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/inventory/1/', { // Assuming id=1
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_1: newInventory[1],
+          product_2: newInventory[2],
+          product_3: newInventory[3],
+          product_4: newInventory[4],
+          product_5: newInventory[5],
+          product_6: newInventory[6],
+        }),
+      });
+      if (response.ok) {
+        setInventory(newInventory);
+      }
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+    const interval = setInterval(fetchInventory, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const navigate = useNavigate();
 
@@ -177,17 +220,15 @@ const Dashboard = () => {
   };
 
   // Update inventory after checkout
-  const updateInventoryAfterCheckout = (items) => {
-    setInventory(prev => {
-      const newInventory = { ...prev };
-      items.forEach(item => {
-        const productId = item.productId;
-        if (newInventory[productId] !== undefined) {
-          newInventory[productId] = Math.max(0, newInventory[productId] - item.quantity);
-        }
-      });
-      return newInventory;
+  const updateInventoryAfterCheckout = async (items) => {
+    const newInventory = { ...inventory };
+    items.forEach(item => {
+      const productId = item.productId;
+      if (newInventory[productId] !== undefined) {
+        newInventory[productId] = Math.max(0, newInventory[productId] - item.quantity);
+      }
     });
+    await updateInventory(newInventory);
   };
 
   const handleCheckout = (order) => {

@@ -4,12 +4,12 @@ import { Package, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const InventoryView = ({ inventory = {} }) => {
   const products = [
-    { id: 1, name: 'Used 5 Liter Purified Water', price: 5 },
-    { id: 2, name: 'New 5 Liter Purified Water', price: 140 },
-    { id: 3, name: 'Used 10 Liter Purified Water', price: 10 },
-    { id: 4, name: 'New 10 Liter Purified Water', price: 160 },
-    { id: 5, name: 'Used 20 Liter Empty Container', price: 20 },
-    { id: 6, name: 'New 20 Liter Empty Container', price: 180 },
+    { id: 1, name: 'Umbrella Cap', price: 5 },
+    { id: 2, name: 'Gallon', price: 20 },
+    { id: 3, name: 'Gallon Cap', price: 10 },
+    { id: 4, name: 'Cap Sticker', price: 10 },
+    { id: 5, name: 'Rock Salt', price: 20 },
+    { id: 6, name: 'New 20 Liter Empty Container', price: 350 },
   ];
 
   const getStockQuantity = (productId) => {

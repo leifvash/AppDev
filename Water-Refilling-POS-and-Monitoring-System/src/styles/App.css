@@ -52,6 +52,17 @@ html, body, #root {
   width: 140px;
 }
 
+.login-response-box {
+  text-align: center;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.384);
+  border-radius: 10px;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .login-box {

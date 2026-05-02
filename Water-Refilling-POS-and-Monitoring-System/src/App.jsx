@@ -13,6 +13,7 @@ function Login() {
     password: ''
   });
   const [errors, setErrors] = useState({});
+  const [loginResponse, setLoginResponse] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,12 +41,38 @@ function Login() {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
-      navigate("/dashboard");
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/token/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: formData.username,
+            password: formData.password
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Login successful:', data);
+          setLoginResponse(data);
+
+          localStorage.setItem("accessToken", data.access);
+          localStorage.setItem("refreshToken", data.refresh);
+        } else {
+          const errorData = await response.json();
+          console.error('Login failed:', errorData);
+          setErrors({ general: errorData.detail || 'Invalid credentials' });
+        }
+      } catch (error) {
+        console.error('Network error:', error);
+        setErrors({ general: 'Network error' });
+      }
     } else {
       setErrors(newErrors);
     }
@@ -84,6 +111,22 @@ function Login() {
             error={errors.password}
             required
           />
+
+          {/* handle errors */}
+          {errors.general && (
+            <p style={{ color: "red", marginTop: "10px" }}>{errors.general}</p>
+          )}
+
+          {/* display login response from backend */}
+          {loginResponse && (
+            <div className="login-response-box">
+              <h4>Login Response tokens from backend API:</h4>
+              {/* <span>Lab 9 Task 3, Task 6, Task 7</span> */}
+              <div>{JSON.stringify(loginResponse, null, 2)}</div>
+              <Button onClick={() => navigate("/dashboard")} >Continue to Dashboard</Button>
+            </div>
+          )}
+          
           <div className="login-button-wrapper">
             <Button
               type="submit"

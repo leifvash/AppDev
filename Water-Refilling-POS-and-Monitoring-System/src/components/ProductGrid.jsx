@@ -8,11 +8,11 @@ const ProductGrid = ({ onAddProduct, inventory = {}, cartItems = [] }) => {
   const products = {
     refills: [
       { id: 1, name: 'Used 5 Liter\nPurified Water', icon: Package, price: 5 },
-      { id: 2, name: 'New 5 Liter\nPurified Water', icon: Package, price: 140 },
+      { id: 2, name: 'New 5 Liter\nPurified Water', icon: Package, price: 20 },
       { id: 3, name: 'Used 10 Liter\nPurified Water', icon: Package, price: 80 },
       { id: 4, name: 'New 10 Liter\nPurified Water', icon: Package, price: 160 },
       { id: 5, name: 'Used 20 Liter\nEmpty Container', icon: Package, price: 20 },
-      { id: 6, name: 'New 20 Liter\nEmpty Container', icon: Package, price: 180 },
+      { id: 6, name: 'New 20 Liter\nEmpty Container', icon: Package, price: 350 },
     ],
   };
 
