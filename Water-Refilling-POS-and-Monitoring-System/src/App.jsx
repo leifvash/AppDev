@@ -121,7 +121,6 @@ function Login() {
           {loginResponse && (
             <div className="login-response-box">
               <h4>Login Response tokens from backend API:</h4>
-              {/* <span>Lab 9 Task 3, Task 6, Task 7</span> */}
               <div>{JSON.stringify(loginResponse, null, 2)}</div>
               <Button onClick={() => navigate("/dashboard")} >Continue to Dashboard</Button>
             </div>

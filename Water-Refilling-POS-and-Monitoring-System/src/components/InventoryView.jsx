@@ -9,7 +9,7 @@ const InventoryView = ({ inventory = {} }) => {
     { id: 3, name: 'Gallon Cap', price: 10 },
     { id: 4, name: 'Cap Sticker', price: 10 },
     { id: 5, name: 'Rock Salt', price: 20 },
-    { id: 6, name: 'New 20 Liter Empty Container', price: 350 },
+    
   ];
 
   const getStockQuantity = (productId) => {
