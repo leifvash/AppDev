@@ -30,8 +30,9 @@ const Dashboard = () => {
   const [transactionGoal] = useState(50);
   const [showMaintenanceConfirm, setShowMaintenanceConfirm] = useState(false);
   
-  // Inventory state
+  // Inventory and Products state
   const [inventory, setInventory] = useState({});
+  const [products, setProducts] = useState([]);
 
   const fetchInventory = async () => {
     try {
@@ -79,9 +80,54 @@ const Dashboard = () => {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/products/');
+      if (response.ok) {
+        const data = await response.json();
+        const sortedProducts = data.sort((a, b) => a.id - b.id);
+        setProducts(sortedProducts);
+        
+        // Keep inventory in sync
+        const inv = {};
+        sortedProducts.forEach(prod => {
+          inv[prod.id] = prod.stock;
+        });
+        setInventory(inv);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/orders/');
+      if (response.ok) {
+        const data = await response.json();
+        // Sort descending by id so newest order is first
+        const sortedData = data.sort((a, b) => {
+          return Number(b.id) - Number(a.id);
+        });
+        setCompletedOrders(sortedData);
+        
+        // Filter for active (not completed yet) transactions for today
+        const today = new Date().toLocaleDateString();
+        const activeToday = sortedData.filter(order => order.date === today && !order.isCompleted);
+        setTodayTransactions(activeToday);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
   useEffect(() => {
-    fetchInventory();
-    const interval = setInterval(fetchInventory, 5000); // Poll every 5 seconds
+    fetchProducts();
+    fetchOrders();
+    const interval = setInterval(() => {
+      fetchProducts();
+      fetchOrders();
+    }, 5000); // Poll products and orders every 5 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -221,6 +267,7 @@ const Dashboard = () => {
 
   // Update inventory after checkout
   const updateInventoryAfterCheckout = async (items) => {
+    // 1. Update legacy Inventory table
     const newInventory = { ...inventory };
     items.forEach(item => {
       const productId = item.productId;
@@ -229,21 +276,64 @@ const Dashboard = () => {
       }
     });
     await updateInventory(newInventory);
+
+    // 2. Update new dynamic Product table
+    for (const item of items) {
+      const productId = item.productId;
+      const currentStock = inventory[productId] || 0;
+      const newStock = Math.max(0, currentStock - item.quantity);
+      
+      try {
+        await fetch(`http://127.0.0.1:8000/api/products/${productId}/`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ stock: newStock }),
+        });
+      } catch (error) {
+        console.error(`Error updating product ${productId} stock:`, error);
+      }
+    }
+    
+    // Refresh products
+    fetchProducts();
   };
 
-  const handleCheckout = (order) => {
+  const handleCheckout = async (order) => {
     // Update inventory before completing order
     updateInventoryAfterCheckout(order.items);
     
-    setCompletedOrders(prev => [order, ...prev]); // Add to permanent history
-    setTodayTransactions(prev => [order, ...prev]); // Add to today's deletable transactions
+    let savedOrder = order;
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/orders/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...order,
+          isCompleted: false,
+        }),
+      });
+      if (response.ok) {
+        savedOrder = await response.json();
+      } else {
+        console.error('Failed to save order to backend');
+      }
+    } catch (error) {
+      console.error('Error saving order:', error);
+    }
+    
+    setCompletedOrders(prev => [savedOrder, ...prev]); // Add to permanent history
+    setTodayTransactions(prev => [savedOrder, ...prev]); // Add to today's deletable transactions
     
     const orderLiters = (order.items || []).reduce((sum, item) => {
       return sum + (extractLitersFromProduct(item.name) * item.quantity);
     }, 0);
     setMaintenanceLiters(prev => prev + orderLiters);
     
-    setShowSuccess(order);
+    setShowSuccess(savedOrder);
     setShowCheckout(false);
     setCartItems([]);
   };
@@ -253,12 +343,39 @@ const Dashboard = () => {
     setActiveTab('cashier');
   };
 
-  const handleDeleteOrder = (orderId) => {
-    setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
+    }
   };
 
-  const handleDeleteTodayTransaction = (orderId) => {
-    setTodayTransactions(prev => prev.filter(transaction => transaction.id !== orderId));
+  const handleDeleteTodayTransaction = async (orderId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isCompleted: true }),
+      });
+      if (response.ok) {
+        setTodayTransactions(prev => prev.filter(transaction => transaction.id !== orderId));
+        setCompletedOrders(prev => prev.map(order => 
+          order.id === orderId ? { ...order, isCompleted: true } : order
+        ));
+      }
+    } catch (error) {
+      console.error('Error completing transaction:', error);
+      setTodayTransactions(prev => prev.filter(transaction => transaction.id !== orderId));
+    }
   };
 
   const navItems = [
@@ -341,6 +458,7 @@ const Dashboard = () => {
               <div className="cashier-layout">
                 <div className="cashier-left">
                   <ProductGrid 
+                    products={products}
                     onAddProduct={handleAddProduct} 
                     inventory={inventory}
                     cartItems={cartItems}
@@ -378,7 +496,7 @@ const Dashboard = () => {
           )}
 
           {activeTab === 'inventory' && (
-            <InventoryView inventory={inventory} />
+            <InventoryView products={products} inventory={inventory} />
           )}
 
           {activeTab === 'history' && (

@@ -2,21 +2,12 @@ import React, { useState } from 'react';
 import '../styles/components/ProductGrid.css';
 import { Package, Zap, Plus, AlertCircle } from 'lucide-react';
 
-const ProductGrid = ({ onAddProduct, inventory = {}, cartItems = [] }) => {
+const ProductGrid = ({ products = [], onAddProduct, inventory = {}, cartItems = [] }) => {
   const [activeTab, setActiveTab] = useState('refills');
 
-  const products = {
-    refills: [
-      { id: 1, name: 'Used 5 Liter\nPurified Water', icon: Package, price: 5 },
-      { id: 2, name: 'New 5 Liter\nPurified Water', icon: Package, price: 20 },
-      { id: 3, name: 'Used 10 Liter\nPurified Water', icon: Package, price: 80 },
-      { id: 4, name: 'New 10 Liter\nPurified Water', icon: Package, price: 160 },
-      { id: 5, name: 'Used 20 Liter\nEmpty Container', icon: Package, price: 20 },
-      { id: 6, name: 'New 20 Liter\nEmpty Container', icon: Package, price: 350 },
-    ],
-  };
-
-  const currentProducts = products[activeTab];
+  const currentProducts = products.filter(product => 
+    (product.category || 'refills').toLowerCase() === activeTab.toLowerCase()
+  );
 
   const tabs = [
     { id: 'refills', label: 'Refills' },
@@ -66,7 +57,7 @@ const ProductGrid = ({ onAddProduct, inventory = {}, cartItems = [] }) => {
 
       <div className="product-grid">
         {currentProducts.map(product => {
-          const IconComponent = product.icon;
+          const IconComponent = Package;
           const outOfStock = isOutOfStock(product.id);
           const stockQty = getStockQuantity(product.id);
           
