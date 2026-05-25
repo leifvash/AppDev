@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-route
 import "./styles/App.css";
 import loginBackground from "./backgrounds/loginpcbackground.jpg";
 import Dashboard from "./Dashboard";
+import Signup from "./Signup";
 import InputField from "./components/InputField";
 import Button from "./components/Button";
 
@@ -135,6 +136,12 @@ function Login() {
               Login
             </Button>
           </div>
+
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <Button type="button" variant="secondary" size="medium" onClick={() => navigate("/signup")}>
+              Sign up
+            </Button>
+          </div>
         </form>
       </div>
     </div>
@@ -146,6 +153,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
