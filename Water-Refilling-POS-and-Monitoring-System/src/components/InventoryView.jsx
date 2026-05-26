@@ -2,15 +2,7 @@ import React from 'react';
 import '../styles/components/InventoryView.css';
 import { Package, AlertTriangle, CheckCircle } from 'lucide-react';
 
-const InventoryView = ({ inventory = {} }) => {
-  const products = [
-    { id: 1, name: 'Umbrella Cap', price: 5 },
-    { id: 2, name: 'Gallon', price: 20 },
-    { id: 3, name: 'Gallon Cap', price: 10 },
-    { id: 4, name: 'Cap Sticker', price: 10 },
-    { id: 5, name: 'Rock Salt', price: 20 },
-    
-  ];
+const InventoryView = ({ products = [], inventory = {} }) => {
 
   const getStockQuantity = (productId) => {
     return inventory[productId] !== undefined ? inventory[productId] : 0;
