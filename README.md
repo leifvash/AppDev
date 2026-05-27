@@ -18,3 +18,10 @@ source .venv/bin/activate   # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
+
+### Frontend
+
+git clone https://github.com/leifvash/AppDev.git
+cd AppDev
+npm install
+npm start
