@@ -1,60 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import '../styles/components/DayTransactionList.css';
 import Button from './Button';
 import { Check } from 'lucide-react';
 import OrderDetailsModal from './OrderDetailsModal';
 
-const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
+const DayTransactionList = ({ mode = "cashier", orders = [], onDeleteOrder }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [transactionToConfirm, setTransactionToConfirm] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const calculateTotals = () => {
-    return {
-      totalSales: orders.reduce((sum, order) => sum + order.totalAmount, 0),
-      totalOrders: orders.length,
-      totalDeliveries: orders.filter(o => o.orderType === 'delivery').length,
-      totalWalkIns: orders.filter(o => o.orderType === 'walk-in').length
-    };
-  };
+  // Totals
+  const totals = useMemo(() => ({
+    totalSales: orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
+    totalOrders: orders.length,
+    totalDeliveries: orders.filter(o => o.orderType === 'delivery').length,
+    totalWalkIns: orders.filter(o => o.orderType === 'walk-in').length
+  }), [orders]);
 
-  const getProductsDisplay = (items) => {
-    if (!items || items.length === 0) return 'N/A';
-    return items.map(item => `${item.name}`).join(', ');
-  };
+  const getProductsDisplay = (items) =>
+    !items || items.length === 0 ? 'N/A' : items.map(item => item.name).join(', ');
 
-  const getTotalQty = (items) => {
-    if (!items || items.length === 0) return 0;
-    return items.reduce((sum, item) => sum + item.quantity, 0);
-  };
-
-  const totals = calculateTotals();
+  const getTotalQty = (items) =>
+    !items || items.length === 0 ? 0 : items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="transactions-container">
-      <h2 className="transactions__title">Today's Transactions</h2>
+      <h2 className="transactions__title">
+        {mode === "cashier" ? "Cashier Transactions" : "Order History"}
+      </h2>
+
+      <div className="datepicker-container">
+        <DatePicker
+          selected={selectedDate}
+          onChange={(date) => setSelectedDate(date)}
+          dateFormat="MM/dd/yyyy"
+        />
+      </div>
 
       {orders.length === 0 ? (
         <div className="transactions__empty">
-          <p>No orders yet today</p>
+          <p>No orders for this date</p>
         </div>
       ) : (
         <>
-          <div className="transactions__summary">
+          <div className="transactions_summary">
             <div className="summary-card">
-              <span className="summary-card__label">Total Orders</span>
-              <span className="summary-card__value">{totals.totalOrders}</span>
+              <span className="summary-card_label">Total Orders</span>
+              <span className="summary-card_value">{totals.totalOrders}</span>
             </div>
             <div className="summary-card">
-              <span className="summary-card__label">Walk-Ins</span>
-              <span className="summary-card__value">{totals.totalWalkIns}</span>
+              <span className="summary-card_label">Walk-Ins</span>
+              <span className="summary-card_value">{totals.totalWalkIns}</span>
             </div>
             <div className="summary-card">
-              <span className="summary-card__label">Deliveries</span>
-              <span className="summary-card__value">{totals.totalDeliveries}</span>
+              <span className="summary-card_label">Deliveries</span>
+              <span className="summary-card_value">{totals.totalDeliveries}</span>
             </div>
             <div className="summary-card summary-card--total">
-              <span className="summary-card__label">Total Sales</span>
-              <span className="summary-card__value">₱{totals.totalSales.toFixed(2)}</span>
+              <span className="summary-card_label">Total Sales</span>
+              <span className="summary-card_value">₱{totals.totalSales.toFixed(2)}</span>
             </div>
           </div>
 
@@ -69,7 +75,7 @@ const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
                   <th className="table-header">Qty</th>
                   <th className="table-header">Total</th>
                   <th className="table-header">Time</th>
-                  <th className="table-header">Action</th>
+                  {mode === "cashier" && <th className="table-header">Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -90,8 +96,8 @@ const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
                     <td className="table-cell">{getTotalQty(order.items)}</td>
                     <td className="table-cell table-cell--amount">₱{order.totalAmount.toFixed(2)}</td>
                     <td className="table-cell">{order.time}</td>
-                    <td className="table-cell table-cell--action">
-                      {canDelete && (
+                    {mode === "cashier" && (
+                      <td className="table-cell table-cell--action">
                         <button
                           className="delete-btn"
                           onClick={(e) => {
@@ -103,8 +109,8 @@ const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
                         >
                           <Check size={18} />
                         </button>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -120,13 +126,12 @@ const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
         />
       )}
 
-      {transactionToConfirm && (
+      {transactionToConfirm && mode === "cashier" && (
         <div className="confirmation-overlay">
           <div className="confirmation-modal">
             <div className="confirmation-header">
               <h2 className="confirmation-title">Mark Transaction as Complete?</h2>
             </div>
-
             <div className="confirmation-content">
               <p className="confirmation-message">
                 Customer: <strong>{transactionToConfirm.customerName}</strong>
@@ -138,7 +143,6 @@ const DayTransactionList = ({ orders, onDeleteOrder, canDelete = true }) => {
                 Are you sure you want to mark this transaction as complete?
               </p>
             </div>
-
             <div className="confirmation-actions">
               <Button
                 variant="primary"

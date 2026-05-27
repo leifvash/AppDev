@@ -16,6 +16,8 @@ import DayTransactionList from './components/DayTransactionList';
 import HealthBar from './components/HealthBar';
 import MaintenanceConfirmationModal from './components/MaintenanceConfirmationModal';
 import InventoryView from './components/InventoryView';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -27,8 +29,9 @@ const Dashboard = () => {
   const [todayTransactions, setTodayTransactions] = useState([]);
   const [transactionGoal] = useState(50);
   const [showMaintenanceConfirm, setShowMaintenanceConfirm] = useState(false);
+  const [predictions, setPredictions] = useState([]);
 
-  // ── Maintenance state (now API-driven) ──────────────────────────────────
+  // ── Maintenance state (API-driven) ──────────────────────────────────
   const [maintenanceLiters, setMaintenanceLiters] = useState(0);
   const [maintenanceCapacity, setMaintenanceCapacity] = useState(2650);
   const [maintenanceId, setMaintenanceId] = useState(null);
@@ -37,7 +40,25 @@ const Dashboard = () => {
   const [inventory, setInventory] = useState({});
   const [products, setProducts] = useState([]);
 
-  // ── FIX 2: Fetch maintenance from backend on mount ──────────────────────
+  const refreshAccessToken = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return null;
+
+    const response = await fetch('http://127.0.0.1:8000/api/token/refresh/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refreshToken })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem('accessToken', data.access);
+      return data.access;
+    } else {
+      console.error('Failed to refresh token');
+      return null;
+    }
+  };
   const fetchMaintenance = async () => {
     try {
       const response = await fetch('http://127.0.0.1:8000/api/maintenance/');
@@ -70,19 +91,55 @@ const Dashboard = () => {
     }
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (date = null) => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/');
+      let url = "http://127.0.0.1:8000/api/orders/";
+      if (date) {
+        const formattedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD
+        url += `?date=${formattedDate}`;
+      }
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         const sortedData = data.sort((a, b) => Number(b.id) - Number(a.id));
         setCompletedOrders(sortedData);
-        const today = new Date().toLocaleDateString();
-        const activeToday = sortedData.filter(order => order.date === today && !order.isCompleted);
-        setTodayTransactions(activeToday);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error("Error fetching orders: ", error);
+    }
+  };
+
+  const fetchPredictions = async () => {
+    try {
+      let token = localStorage.getItem('accessToken');
+      let response = await fetch('http://127.0.0.1:8000/api/predictions/', {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // If token expired, refresh and retry
+      if (response.status === 401) {
+        token = await refreshAccessToken();
+        if (token) {
+          response = await fetch('http://127.0.0.1:8000/api/predictions/', {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        setPredictions(data.predictions);
+      } else {
+        console.error('Prediction fetch failed:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching predictions:', error);
     }
   };
 
@@ -90,7 +147,8 @@ const Dashboard = () => {
     fetchProducts();
     fetchOrders();
     fetchMaintenance(); // ← FIX 2: load on mount
-    
+    fetchPredictions(); // ← FIX 3: load predictions on mount
+
     const interval = setInterval(() => {
       fetchProducts();
       fetchOrders();
@@ -112,11 +170,14 @@ const Dashboard = () => {
 
     ws.onclose = () => console.log('WebSocket disconnected');
 
+    
+
     // ── Cleanup: close WS and stop polling when component unmounts
     return () => {
       ws.close();
       clearInterval(interval);
     };
+    
   }, []);
 
   const navigate = useNavigate();
@@ -230,6 +291,7 @@ const Dashboard = () => {
     setShowSuccess(savedOrder);
     setShowCheckout(false);
     setCartItems([]);
+    setRefreshCashier(prev => !prev); // toggle to trigger refetch
   };
 
   const handleSuccessClose = () => {
@@ -291,39 +353,65 @@ const Dashboard = () => {
         />
         <main className="main-content">
           {activeTab === 'dashboard' && (
-            <section className="stats-grid">
-              <StatCard
-                title="Today's Sales"
-                value={`P ${stats.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
-              />
-              <StatCard title="Liters Refilled" value={`${stats.totalLiters} Liters`} isBluHighlight={true} />
-              <StatCard title="Deliveries Completed" value={stats.transactionCount} isBluHighlight={true}>
-                <ProgressBar
-                  percentage={Math.min((stats.transactionCount / transactionGoal) * 100, 100)}
-                  label={`${Math.min(Math.round((stats.transactionCount / transactionGoal) * 100), 100)}% of Goal`}
+            <div className="dashboard-tab">
+              <section className="stats-grid">
+                <StatCard
+                  title="Today's Sales"
+                  value={`P ${stats.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
                 />
-              </StatCard>
-              <StatCard
-                title="Maintenance Status"
-                value={`${maintenanceCapacity - maintenanceLiters}L / ${maintenanceCapacity}L`}
-              >
-                <div className="maintenance-info">
-                  <p className={`maintenance-message maintenance-message--${maintenanceStatus.status}`}>
-                    {maintenanceStatus.message}
-                  </p>
-                  <HealthBar percentage={maintenanceStatus.healthPercentage} showLabel={true} />
-                  <Button
-                    variant={maintenanceStatus.status === 'critical' ? 'danger' : 'secondary'}
-                    size="medium"
-                    icon={maintenanceStatus.status === 'critical' ? <AlertTriangle size={16} /> : undefined}
-                    onClick={handleMaintenanceFix}
-                    className={maintenanceStatus.status === 'critical' ? 'btn--pulse' : ''}
-                  >
-                    {maintenanceStatus.buttonText}
-                  </Button>
-                </div>
-              </StatCard>
-            </section>
+                <StatCard title="Liters Refilled" value={`${stats.totalLiters} Liters`} isBluHighlight={true} />
+                <StatCard title="Deliveries Completed" value={stats.transactionCount} isBluHighlight={true}>
+                  <ProgressBar
+                    percentage={Math.min((stats.transactionCount / transactionGoal) * 100, 100)}
+                    label={`${Math.min(Math.round((stats.transactionCount / transactionGoal) * 100), 100)}% of Goal`}
+                  />
+                </StatCard>
+                <StatCard
+                  title="Maintenance Status"
+                  value={`${maintenanceCapacity - maintenanceLiters}L / ${maintenanceCapacity}L`}
+                >
+                  <div className="maintenance-info">
+                    <p className={`maintenance-message maintenance-message--${maintenanceStatus.status}`}>
+                      {maintenanceStatus.message}
+                    </p>
+                    <HealthBar percentage={maintenanceStatus.healthPercentage} showLabel={true} />
+                    <Button
+                      variant={maintenanceStatus.status === 'critical' ? 'danger' : 'secondary'}
+                      size="medium"
+                      icon={maintenanceStatus.status === 'critical' ? <AlertTriangle size={16} /> : undefined}
+                      onClick={handleMaintenanceFix}
+                      className={maintenanceStatus.status === 'critical' ? 'btn--pulse' : ''}
+                    >
+                      {maintenanceStatus.buttonText}
+                    </Button>
+                  </div>
+                </StatCard>
+              </section>
+
+              {/* ── 7-Day Sales Forecast ─────────────────────────────── */}
+              {predictions.length > 0 && (
+                <section className="predictions-section">
+                  <h2 className="predictions-title">
+                    <BarChart2 size={20} /> 7-Day Sales Forecast
+                  </h2>
+                  <div className="predictions-grid">
+                    {predictions.map((p, i) => (
+                      <div key={i} className="prediction-card">
+                        <span className="prediction-day">{p.day.slice(0, 3)}</span>
+                        <span className="prediction-date">{p.date}</span>
+                        <div
+                          className="prediction-bar"
+                          style={{
+                            height: `${Math.round((p.predicted_revenue / Math.max(...predictions.map(x => x.predicted_revenue))) * 100)}px`
+                          }}
+                        />
+                        <span className="prediction-amount">₱{p.predicted_revenue.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
           )}
 
           {activeTab === 'cashier' && (
@@ -351,19 +439,23 @@ const Dashboard = () => {
                 </div>
               </div>
               {showCheckout && (
-                <CheckoutForm
-                  cartItems={cartItems}
-                  totalAmount={calculateCartTotal()}
-                  onCheckout={handleCheckout}
-                  onClose={() => setShowCheckout(false)}
+                  <CheckoutForm
+                    cartItems={cartItems}
+                    totalAmount={calculateCartTotal()}
+                    onCheckout={handleCheckout}
+                    onClose={() => setShowCheckout(false)}
+                  />
+                )}
+                {showSuccess && (
+                  <OrderSuccessModal order={showSuccess} onClose={handleSuccessClose} />
+                )}
+                <DayTransactionList
+                  orders={todayTransactions}
+                  onDeleteOrder={handleDeleteTodayTransaction}
+                  mode="cashier"
                 />
-              )}
-              {showSuccess && (
-                <OrderSuccessModal order={showSuccess} onClose={handleSuccessClose} />
-              )}
-              <DayTransactionList orders={todayTransactions} onDeleteOrder={handleDeleteTodayTransaction} />
-            </div>
-          )}
+              </div>
+            )}
 
           {activeTab === 'inventory' && (
             <InventoryView products={products} inventory={inventory} />
@@ -371,7 +463,11 @@ const Dashboard = () => {
 
           {activeTab === 'history' && (
             <div className="order-history-section">
-              <DayTransactionList orders={completedOrders} onDeleteOrder={handleDeleteOrder} canDelete={false} />
+              <DayTransactionList
+                orders={completedOrders}
+                onDeleteOrder={handleDeleteOrder}
+                mode="history"
+              />
             </div>
           )}
 

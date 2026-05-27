@@ -59,11 +59,21 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
+      // Format date as MM/DD/YYYY with leading zeros
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0'); // 01–12
+      const day = String(now.getDate()).padStart(2, '0');        // 01–31
+      const year = now.getFullYear();
+      const formattedDate = `${month}/${day}/${year}`;
+
+      // Format time consistently (12-hour with AM/PM)
+      const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
       // Create order with cart items
       const order = {
         id: Date.now(),
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString(),
+        date: formattedDate, // ✅ MM/DD/YYYY
+        time: formattedTime, // ✅ HH:MM:SS AM/PM
         customerName: formData.customerName,
         orderType: formData.orderType,
         deliveryAddress: formData.orderType === 'delivery' ? formData.deliveryAddress : null,
@@ -78,6 +88,7 @@ const CheckoutForm = ({ cartItems, totalAmount, onCheckout, onClose }) => {
       setErrors(newErrors);
     }
   };
+
 
   return (
     <div className="checkout-overlay">

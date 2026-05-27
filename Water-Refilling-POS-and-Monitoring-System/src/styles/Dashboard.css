@@ -24,13 +24,14 @@
   flex-direction: column;
   gap: 24px;
   overflow-y: auto;
+  width: 100%;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 32px;
-  min-height: 100%;
+  /* min-height: 100%; */
 }
 
 /* Cashier Section */
@@ -141,4 +142,132 @@
     grid-template-columns: 1fr;
     gap: 12px;
   }
+}
+
+.predictions-section {
+  margin-top: 24px;
+  background: var(--card-bg, #d9d9d9);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.predictions-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary, #000000);
+}
+
+.predictions-grid {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 160px;
+}
+
+.prediction-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.prediction-day {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #000000);
+}
+
+.prediction-date {
+  font-size: 0.65rem;
+  color: var(--text-muted, #575757);
+}
+
+.prediction-bar {
+  width: 100%;
+  background: linear-gradient(to top, #3b82f6, #60a5fa);
+  border-radius: 6px 6px 0 0;
+  min-height: 8px;
+  transition: height 0.3s ease;
+}
+
+.prediction-amount {
+  font-size: 0.65rem;
+  color: var(--text-muted, #575757);
+  text-align: center;
+}
+
+/* === DatePicker Styling === */
+.react-datepicker-wrapper {
+  display: inline-block;
+  width: auto;
+}
+
+.react-datepicker__input-container input {
+  width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #333;
+  background-color: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.react-datepicker__input-container input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 4px rgba(0, 123, 255, 0.4);
+  outline: none;
+}
+
+/* Calendar pop-up */
+.react-datepicker {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.react-datepicker__header {
+  background-color: #007bff;
+  color: #fff;
+  border-bottom: 1px solid #0069d9;
+  padding-top: 8px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.react-datepicker__current-month {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.react-datepicker__day-name {
+  color: #f0f0f0;
+  font-weight: 500;
+}
+
+.react-datepicker__day {
+  color: #333;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.react-datepicker__day:hover {
+  background-color: #e6f0ff;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.react-datepicker__day--today {
+  font-weight: bold;
+  color: #007bff;
 }
