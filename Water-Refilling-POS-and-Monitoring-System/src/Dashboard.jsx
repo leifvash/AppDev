@@ -23,60 +23,34 @@ const Dashboard = () => {
   const [cartItems, setCartItems] = useState([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showSuccess, setShowSuccess] = useState(null);
-  const [completedOrders, setCompletedOrders] = useState([]); // Permanent order history
-  const [todayTransactions, setTodayTransactions] = useState([]); // Deletable today's transactions
-  const [maintenanceLiters, setMaintenanceLiters] = useState(0);
-  const [maintenanceCapacity] = useState(2650);
+  const [completedOrders, setCompletedOrders] = useState([]);
+  const [todayTransactions, setTodayTransactions] = useState([]);
   const [transactionGoal] = useState(50);
   const [showMaintenanceConfirm, setShowMaintenanceConfirm] = useState(false);
-  
-  // Inventory and Products state
+
+  // ── Maintenance state (now API-driven) ──────────────────────────────────
+  const [maintenanceLiters, setMaintenanceLiters] = useState(0);
+  const [maintenanceCapacity, setMaintenanceCapacity] = useState(2650);
+  const [maintenanceId, setMaintenanceId] = useState(null);
+
+  // ── Inventory / Products ────────────────────────────────────────────────
   const [inventory, setInventory] = useState({});
   const [products, setProducts] = useState([]);
 
-  const fetchInventory = async () => {
+  // ── FIX 2: Fetch maintenance from backend on mount ──────────────────────
+  const fetchMaintenance = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/inventory/');
+      const response = await fetch('http://127.0.0.1:8000/api/maintenance/');
       if (response.ok) {
         const data = await response.json();
         if (data.length > 0) {
-          const inv = data[0];
-          setInventory({
-            1: inv.product_1,
-            2: inv.product_2,
-            3: inv.product_3,
-            4: inv.product_4,
-            5: inv.product_5,
-            6: inv.product_6,
-          });
+          setMaintenanceId(data[0].id);
+          setMaintenanceLiters(data[0].liters_since_last_service);
+          setMaintenanceCapacity(data[0].capacity);
         }
       }
     } catch (error) {
-      console.error('Error fetching inventory:', error);
-    }
-  };
-
-  const updateInventory = async (newInventory) => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/inventory/1/', { // Assuming id=1
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          product_1: newInventory[1],
-          product_2: newInventory[2],
-          product_3: newInventory[3],
-          product_4: newInventory[4],
-          product_5: newInventory[5],
-          product_6: newInventory[6],
-        }),
-      });
-      if (response.ok) {
-        setInventory(newInventory);
-      }
-    } catch (error) {
-      console.error('Error updating inventory:', error);
+      console.error('Error fetching maintenance:', error);
     }
   };
 
@@ -87,12 +61,8 @@ const Dashboard = () => {
         const data = await response.json();
         const sortedProducts = data.sort((a, b) => a.id - b.id);
         setProducts(sortedProducts);
-        
-        // Keep inventory in sync
         const inv = {};
-        sortedProducts.forEach(prod => {
-          inv[prod.id] = prod.stock;
-        });
+        sortedProducts.forEach(prod => { inv[prod.id] = prod.stock; });
         setInventory(inv);
       }
     } catch (error) {
@@ -105,13 +75,8 @@ const Dashboard = () => {
       const response = await fetch('http://127.0.0.1:8000/api/orders/');
       if (response.ok) {
         const data = await response.json();
-        // Sort descending by id so newest order is first
-        const sortedData = data.sort((a, b) => {
-          return Number(b.id) - Number(a.id);
-        });
+        const sortedData = data.sort((a, b) => Number(b.id) - Number(a.id));
         setCompletedOrders(sortedData);
-        
-        // Filter for active (not completed yet) transactions for today
         const today = new Date().toLocaleDateString();
         const activeToday = sortedData.filter(order => order.date === today && !order.isCompleted);
         setTodayTransactions(activeToday);
@@ -124,104 +89,90 @@ const Dashboard = () => {
   useEffect(() => {
     fetchProducts();
     fetchOrders();
+    fetchMaintenance(); // ← FIX 2: load on mount
+    
     const interval = setInterval(() => {
       fetchProducts();
       fetchOrders();
-    }, 5000); // Poll products and orders every 5 seconds
-    return () => clearInterval(interval);
+    }, 5000);
+
+    // ── WebSocket ────────────────────────────────────────────────
+    const ws = new WebSocket('ws://127.0.0.1:8000/ws/dashboard/');
+
+    ws.onopen = () => console.log('WebSocket connected');
+
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.event === 'new_order') {
+        fetchProducts();
+        fetchOrders();
+        fetchMaintenance();
+      }
+    };
+
+    ws.onclose = () => console.log('WebSocket disconnected');
+
+    // ── Cleanup: close WS and stop polling when component unmounts
+    return () => {
+      ws.close();
+      clearInterval(interval);
+    };
   }, []);
 
   const navigate = useNavigate();
 
-  // Extract liters from product name
-  const extractLitersFromProduct = (productName) => {
-    const match = productName.match(/(\d+)\s*(?:Liter|L)/i);
-    return match ? parseInt(match[1]) : 0;
-  };
-
-  // Calculate today's stats
   const calculateTodayStats = () => {
     const today = new Date().toLocaleDateString();
     const todayOrders = completedOrders.filter(order => order.date === today);
     const totalSales = todayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
     const totalLiters = todayOrders.reduce((sum, order) => {
-      const orderLiters = (order.items || []).reduce((itemSum, item) => {
-        return itemSum + (extractLitersFromProduct(item.name) * item.quantity);
+      return sum + (order.items || []).reduce((itemSum, item) => {
+        const match = item.name.match(/(\d+)\s*(?:Liter|L)/i);
+        return itemSum + ((match ? parseInt(match[1]) : 0) * item.quantity);
       }, 0);
-      return sum + orderLiters;
     }, 0);
-    return {
-      totalSales,
-      totalLiters,
-      transactionCount: todayOrders.length,
-    };
+    return { totalSales, totalLiters, transactionCount: todayOrders.length };
   };
 
-  // Get maintenance alert status based on health (remaining capacity)
   const getMaintenanceStatus = () => {
     const remainingLiters = maintenanceCapacity - maintenanceLiters;
     const healthPercentage = (remainingLiters / maintenanceCapacity) * 100;
     if (healthPercentage < 25) {
-      return {
-        status: 'critical',
-        message: 'Warning: production should halt. Maintenance must be executed as soon as possible',
-        buttonText: 'Fix',
-        healthPercentage,
-      };
-    } else if (healthPercentage >= 25 && healthPercentage < 50) {
-      return {
-        status: 'alert',
-        message: 'You are almost at the maintenance pace. Please prepare your necessary tools and filters',
-        buttonText: 'Fix',
-        healthPercentage,
-      };
-    } else {
-      return {
-        status: 'good',
-        message: 'You are good',
-        buttonText: 'Fix',
-        healthPercentage,
-      };
+      return { status: 'critical', message: 'Warning: production should halt. Maintenance must be executed as soon as possible', buttonText: 'Fix', healthPercentage };
+    } else if (healthPercentage < 50) {
+      return { status: 'alert', message: 'You are almost at the maintenance pace. Please prepare your necessary tools and filters', buttonText: 'Fix', healthPercentage };
     }
+    return { status: 'good', message: 'You are good', buttonText: 'Fix', healthPercentage };
   };
 
-  // ✅ FIX 1 & 2: Call the functions and store results in variables
   const stats = calculateTodayStats();
   const maintenanceStatus = getMaintenanceStatus();
 
-  // Handle maintenance fix
-  const handleMaintenanceFix = () => {
-    setShowMaintenanceConfirm(true);
-  };
+  const handleMaintenanceFix = () => setShowMaintenanceConfirm(true);
 
-  // Handle maintenance confirmation
-  const handleMaintenanceConfirm = () => {
-    setMaintenanceLiters(0);
+  // ── FIX 2: Confirm calls the reset endpoint instead of local setState ───
+  const handleMaintenanceConfirm = async () => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/maintenance/${maintenanceId}/reset/`,
+        { method: 'POST' }
+      );
+      if (response.ok) {
+        setMaintenanceLiters(0);
+      }
+    } catch (error) {
+      console.error('Error resetting maintenance:', error);
+    }
     setShowMaintenanceConfirm(false);
     setActiveTab('dashboard');
   };
 
-  const handleLogout = () => {
-    navigate('/');
-  };
+  const handleLogout = () => navigate('/');
+  const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
+  const handleAddItem = (item) => setCartItems(prev => [...prev, item]);
+  const handleRemoveItem = (itemId) => setCartItems(prev => prev.filter(item => item.id !== itemId));
+  const calculateCartTotal = () => cartItems.reduce((sum, item) => sum + (item.subtotal || item.price), 0);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  const handleAddItem = (item) => {
-    setCartItems(prev => [...prev, item]);
-  };
-
-  const handleRemoveItem = (itemId) => {
-    setCartItems(prev => prev.filter(item => item.id !== itemId));
-  };
-
-  const calculateCartTotal = () => {
-    return cartItems.reduce((sum, item) => sum + (item.subtotal || item.price), 0);
-  };
-
-  // Calculate available stock (inventory minus what's in cart)
   const getAvailableStock = (productId) => {
     const totalInventory = inventory[productId] || 0;
     const inCart = cartItems
@@ -231,108 +182,51 @@ const Dashboard = () => {
   };
 
   const handleAddProduct = (product) => {
-    const availableStock = getAvailableStock(product.id);
-    if (availableStock <= 0) {
-      return; // Don't add if no available stock
-    }
-    const cartItem = {
+    if (getAvailableStock(product.id) <= 0) return;
+    handleAddItem({
       id: Date.now(),
       productId: product.id,
       name: product.name,
       price: product.price,
       quantity: 1,
       subtotal: product.price,
-    };
-    handleAddItem(cartItem);
+      liters: product.liters || 0, // pass liters per unit for maintenance tally
+    });
   };
 
   const handleUpdateQuantity = (itemId, newQuantity) => {
     const item = cartItems.find(i => i.id === itemId);
     if (!item) return;
-    
-    const availableStock = getAvailableStock(item.productId);
-    if (newQuantity > availableStock + item.quantity) {
-      // Can't exceed available stock
-      return;
-    }
-    
+    if (newQuantity > getAvailableStock(item.productId) + item.quantity) return;
     setCartItems(prev =>
-      prev.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: newQuantity, subtotal: item.price * newQuantity }
-          : item
-      )
+      prev.map(i => i.id === itemId ? { ...i, quantity: newQuantity, subtotal: i.price * newQuantity } : i)
     );
   };
 
-  // Update inventory after checkout
-  const updateInventoryAfterCheckout = async (items) => {
-    // 1. Update legacy Inventory table
-    const newInventory = { ...inventory };
-    items.forEach(item => {
-      const productId = item.productId;
-      if (newInventory[productId] !== undefined) {
-        newInventory[productId] = Math.max(0, newInventory[productId] - item.quantity);
-      }
-    });
-    await updateInventory(newInventory);
-
-    // 2. Update new dynamic Product table
-    for (const item of items) {
-      const productId = item.productId;
-      const currentStock = inventory[productId] || 0;
-      const newStock = Math.max(0, currentStock - item.quantity);
-      
-      try {
-        await fetch(`http://127.0.0.1:8000/api/products/${productId}/`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ stock: newStock }),
-        });
-      } catch (error) {
-        console.error(`Error updating product ${productId} stock:`, error);
-      }
-    }
-    
-    // Refresh products
-    fetchProducts();
-  };
-
+  // ── FIX 1: No more manual stock deduction — backend handles it via OrderSerializer ──
   const handleCheckout = async (order) => {
-    // Update inventory before completing order
-    updateInventoryAfterCheckout(order.items);
-    
     let savedOrder = order;
     try {
       const response = await fetch('http://127.0.0.1:8000/api/orders/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...order,
-          isCompleted: false,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...order, isCompleted: false }),
       });
       if (response.ok) {
         savedOrder = await response.json();
+        // Re-fetch products so UI stock reflects what the backend actually set
+        await fetchProducts();
+        // Re-fetch maintenance so liters_since_last_service is up to date
+        await fetchMaintenance();
       } else {
         console.error('Failed to save order to backend');
       }
     } catch (error) {
       console.error('Error saving order:', error);
     }
-    
-    setCompletedOrders(prev => [savedOrder, ...prev]); // Add to permanent history
-    setTodayTransactions(prev => [savedOrder, ...prev]); // Add to today's deletable transactions
-    
-    const orderLiters = (order.items || []).reduce((sum, item) => {
-      return sum + (extractLitersFromProduct(item.name) * item.quantity);
-    }, 0);
-    setMaintenanceLiters(prev => prev + orderLiters);
-    
+
+    setCompletedOrders(prev => [savedOrder, ...prev]);
+    setTodayTransactions(prev => [savedOrder, ...prev]);
     setShowSuccess(savedOrder);
     setShowCheckout(false);
     setCartItems([]);
@@ -345,12 +239,8 @@ const Dashboard = () => {
 
   const handleDeleteOrder = async (orderId) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
-      }
+      const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, { method: 'DELETE' });
+      if (response.ok) setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
     } catch (error) {
       console.error('Error deleting order:', error);
       setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
@@ -361,20 +251,16 @@ const Dashboard = () => {
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true }),
       });
       if (response.ok) {
-        setTodayTransactions(prev => prev.filter(transaction => transaction.id !== orderId));
-        setCompletedOrders(prev => prev.map(order => 
-          order.id === orderId ? { ...order, isCompleted: true } : order
-        ));
+        setTodayTransactions(prev => prev.filter(t => t.id !== orderId));
+        setCompletedOrders(prev => prev.map(o => o.id === orderId ? { ...o, isCompleted: true } : o));
       }
     } catch (error) {
       console.error('Error completing transaction:', error);
-      setTodayTransactions(prev => prev.filter(transaction => transaction.id !== orderId));
+      setTodayTransactions(prev => prev.filter(t => t.id !== orderId));
     }
   };
 
@@ -386,12 +272,7 @@ const Dashboard = () => {
   ];
 
   const logoutBtn = (
-    <Button
-      variant="danger"
-      size="medium"
-      icon={<LogOut size={18} />}
-      onClick={handleLogout}
-    >
+    <Button variant="danger" size="medium" icon={<LogOut size={18} />} onClick={handleLogout}>
       Logout
     </Button>
   );
@@ -415,16 +296,8 @@ const Dashboard = () => {
                 title="Today's Sales"
                 value={`P ${stats.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`}
               />
-              <StatCard
-                title="Liters Refilled"
-                value={`${stats.totalLiters} Liters`}
-                isBluHighlight={true}
-              />
-              <StatCard
-                title="Deliveries Completed"
-                value={stats.transactionCount}
-                isBluHighlight={true}
-              >
+              <StatCard title="Liters Refilled" value={`${stats.totalLiters} Liters`} isBluHighlight={true} />
+              <StatCard title="Deliveries Completed" value={stats.transactionCount} isBluHighlight={true}>
                 <ProgressBar
                   percentage={Math.min((stats.transactionCount / transactionGoal) * 100, 100)}
                   label={`${Math.min(Math.round((stats.transactionCount / transactionGoal) * 100), 100)}% of Goal`}
@@ -457,9 +330,9 @@ const Dashboard = () => {
             <div className="cashier-section">
               <div className="cashier-layout">
                 <div className="cashier-left">
-                  <ProductGrid 
+                  <ProductGrid
                     products={products}
-                    onAddProduct={handleAddProduct} 
+                    onAddProduct={handleAddProduct}
                     inventory={inventory}
                     cartItems={cartItems}
                   />
@@ -486,10 +359,7 @@ const Dashboard = () => {
                 />
               )}
               {showSuccess && (
-                <OrderSuccessModal
-                  order={showSuccess}
-                  onClose={handleSuccessClose}
-                />
+                <OrderSuccessModal order={showSuccess} onClose={handleSuccessClose} />
               )}
               <DayTransactionList orders={todayTransactions} onDeleteOrder={handleDeleteTodayTransaction} />
             </div>
@@ -518,4 +388,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
