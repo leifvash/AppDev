@@ -19,6 +19,9 @@ import InventoryView from './components/InventoryView';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
+const WS_URL = import.meta.env.VITE_WS_URL;
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -44,7 +47,7 @@ const Dashboard = () => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) return null;
 
-    const response = await fetch('http://127.0.0.1:8000/api/token/refresh/', {
+    const response = await fetch(`${API_URL}/api/token/refresh/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh: refreshToken })
@@ -61,7 +64,7 @@ const Dashboard = () => {
   };
   const fetchMaintenance = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/maintenance/');
+      const response = await fetch(`${API_URL}/api/maintenance/`);
       if (response.ok) {
         const data = await response.json();
         if (data.length > 0) {
@@ -77,7 +80,7 @@ const Dashboard = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/products/');
+      const response = await fetch(`${API_URL}/api/products/`);
       if (response.ok) {
         const data = await response.json();
         const sortedProducts = data.sort((a, b) => a.id - b.id);
@@ -93,7 +96,7 @@ const Dashboard = () => {
 
   const fetchOrders = async (date = null) => {
     try {
-      let url = "http://127.0.0.1:8000/api/orders/";
+      let url = `${API_URL}/api/orders/`;
       if (date) {
         const formattedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD
         url += `?date=${formattedDate}`;
@@ -112,18 +115,23 @@ const Dashboard = () => {
   const fetchPredictions = async () => {
     try {
       let token = localStorage.getItem('accessToken');
-      let response = await fetch('http://127.0.0.1:8000/api/predictions/', {
+      let response = await fetch(`${API_URL}/api/predictions/`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
+      if (!token) {
+        console.warn('No access token, skipping predictions');
+        return; // ← add this
+      }
+
       // If token expired, refresh and retry
       if (response.status === 401) {
         token = await refreshAccessToken();
         if (token) {
-          response = await fetch('http://127.0.0.1:8000/api/predictions/', {
+          response = await fetch(`${API_URL}/api/predictions/`, {
             headers: { 
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -155,7 +163,7 @@ const Dashboard = () => {
     }, 5000);
 
     // ── WebSocket ────────────────────────────────────────────────
-    const ws = new WebSocket('ws://127.0.0.1:8000/ws/dashboard/');
+    const ws = new WebSocket(`${WS_URL}/ws/dashboard/`);
 
     ws.onopen = () => console.log('WebSocket connected');
 
@@ -215,7 +223,7 @@ const Dashboard = () => {
   const handleMaintenanceConfirm = async () => {
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/maintenance/${maintenanceId}/reset/`,
+        `${API_URL}/api/maintenance/${maintenanceId}/reset/`,
         { method: 'POST' }
       );
       if (response.ok) {
@@ -228,7 +236,12 @@ const Dashboard = () => {
     setActiveTab('dashboard');
   };
 
-  const handleLogout = () => navigate('/');
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    navigate('/');
+  };
+
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
   const handleAddItem = (item) => setCartItems(prev => [...prev, item]);
   const handleRemoveItem = (itemId) => setCartItems(prev => prev.filter(item => item.id !== itemId));
@@ -268,7 +281,7 @@ const Dashboard = () => {
   const handleCheckout = async (order) => {
     let savedOrder = order;
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/', {
+      const response = await fetch(`${API_URL}/api/orders/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...order, isCompleted: false }),
@@ -301,7 +314,7 @@ const Dashboard = () => {
 
   const handleDeleteOrder = async (orderId) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, { method: 'DELETE' });
+      const response = await fetch(`${API_URL}/api/orders/${orderId}/`, { method: 'DELETE' });
       if (response.ok) setCompletedOrders(prev => prev.filter(order => order.id !== orderId));
     } catch (error) {
       console.error('Error deleting order:', error);
@@ -311,7 +324,7 @@ const Dashboard = () => {
 
   const handleDeleteTodayTransaction = async (orderId) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
+      const response = await fetch(`${API_URL}/api/orders/${orderId}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isCompleted: true }),

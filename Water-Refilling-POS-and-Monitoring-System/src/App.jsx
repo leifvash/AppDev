@@ -7,6 +7,9 @@ import Signup from "./Signup";
 import InputField from "./components/InputField";
 import Button from "./components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL;
+const WS_URL = import.meta.env.VITE_WS_URL;
+
 function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -48,7 +51,7 @@ function Login() {
 
     if (Object.keys(newErrors).length === 0) {
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/token/', {
+        const response = await fetch(`${API_URL}/api/token/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -65,6 +68,7 @@ function Login() {
 
           localStorage.setItem("accessToken", data.access);
           localStorage.setItem("refreshToken", data.refresh);
+          navigate("/dashboard"); // ← add this line
         } else {
           const errorData = await response.json();
           console.error('Login failed:', errorData);
